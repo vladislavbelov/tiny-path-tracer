@@ -1,0 +1,15 @@
+# Binary
+tiny-path-tracer
+tiny-path-tracer.exe
+
+# Output
+*.png
+*.ppm
+
+# Python tools
+*.pyc
+*.pyo
+__pycache__/
+
+# macOS specific data
+.DS_Store
