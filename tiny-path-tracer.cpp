@@ -116,6 +116,18 @@ Vector3 Trace(const Ray3& ray) {
     return normal;
 }
 
+void Render(int x0, int y0, int x1, int y1, int width, int height,
+            std::vector<Vector3>& out) {
+    const float aspect_ratio = 1.0f * width / height;
+    for (int y = y0; y < y1; ++y)
+        for (int x = x0; x < x1; ++x) {
+            const float u = 1.0f * x / width - 0.5f;
+            const float v = (1.0f * y / height - 0.5f) / aspect_ratio;
+            Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
+            out[x + y * width] = (Trace(ray) + Vector3{1, 1, 1}) / 2;
+        }
+}
+
 void OutputColor(std::ostream& out, const Vector3& v) {
     out << clamp<int>(v.x * 255, 0, 255) << " "
         << clamp<int>(v.y * 255, 0, 255) << " "
@@ -136,23 +148,20 @@ int main(int argc, char* argv[]) {
         if (!line.empty() && line.front() != '#' && line.front() != ';')
             scene << line << '\n';
     }
+    scene_raw_in.close();
 
     scene >> spheres;
 
     int width = 640, height = 480;
-    const float aspect_ratio = 1.0f * width / height;
+    std::vector<Vector3> pixels(width * height);
+    Render(0, 0, width, height, width, height, pixels);
 
     std::ofstream out("result.ppm");
     if (!out)
         return EXIT_FAILURE;
     out << "P3\n" << width << " " << height << "\n" << 255 << "\n";
-    for (int y = 0; y < height; ++y)
-        for (int x = 0; x < width; ++x) {
-            const float u = 1.0f * x / width - 0.5f;
-            const float v = (1.0f * y / height - 0.5f) / aspect_ratio;
-            Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
-            OutputColor(out, (Trace(ray) + Vector3{1, 1, 1}) / 2);
-        }
+    for (const Vector3& pixel_color : pixels)
+        OutputColor(out, pixel_color);
     return EXIT_SUCCESS;
 }
 
