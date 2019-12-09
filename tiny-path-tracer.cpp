@@ -1,6 +1,10 @@
+#include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <iterator>
+#include <limits>
+#include <sstream>
 #include <vector>
 
 template<typename T>
@@ -50,6 +54,27 @@ Vector3 normalize(const Vector3& v) {
     return len > 0.0f ? v / len : v;
 }
 
+std::istream& operator>>(std::istream& in, Vector3& v) {
+    return in >> v.x >> v.y >> v.z;
+}
+std::ostream& operator<<(std::ostream& out, const Vector3& v) {
+    return out << "(" << v.x << "," << v.y << "," << v.z << ")";
+}
+std::istream& operator>>(std::istream& in, Sphere& sphere) {
+    return in >> sphere.p >> sphere.r;
+}
+template<typename T>
+std::istream& operator>>(std::istream& in, std::vector<T>& vector) {
+    size_t size;
+    in >> size;
+    if (!in || size == std::numeric_limits<size_t>::max())
+        return in;
+    vector.resize(size);
+    for (T& item : vector)
+        in >> item;
+    return in;
+}
+
 bool Intersect(const Ray3& ray, const Sphere& sphere, Vector3& x, Vector3& normal) {
     const Vector3 k = ray.o - sphere.p;
     const float b = dot(k, ray.d);
@@ -67,11 +92,7 @@ bool Intersect(const Ray3& ray, const Sphere& sphere, Vector3& x, Vector3& norma
     return true;
 }
 
-std::vector<Sphere> spheres = {
-    {{0, 0, 10}, 3},
-    {{-2, 1, 8}, 2},
-    {{-2, -1, 12}, 2}
-};
+std::vector<Sphere> spheres;
 
 bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal) {
     Vector3 tempX, tempNormal;
@@ -102,6 +123,22 @@ void OutputColor(std::ostream& out, const Vector3& v) {
 }
 
 int main(int argc, char* argv[]) {
+    std::string scene_path = argc > 1 ? argv[1] : "scenes/default.txt";
+    std::ifstream scene_raw_in(scene_path); // Read scene from the file.
+    if (!scene_raw_in)
+        return EXIT_FAILURE;
+    std::stringstream scene;
+    for (std::string line; getline(scene_raw_in, line);) {
+        // Trim leading spaces and skip comments.
+        size_t start_pos = line.find_first_not_of(" \t\r");
+        if (start_pos != std::string::npos)
+            line = line.substr(start_pos);
+        if (!line.empty() && line.front() != '#' && line.front() != ';')
+            scene << line << '\n';
+    }
+
+    scene >> spheres;
+
     int width = 640, height = 480;
     const float aspect_ratio = 1.0f * width / height;
 

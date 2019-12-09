@@ -1,0 +1,8 @@
+# Default scene for tiny-path-tracer.
+# Number of spheres.
+3
+# Position (x, y, z), radius.
+0 0 10  3
+-2 1 8  2
+-2 -1 12  2
+
