@@ -43,6 +43,14 @@ Vector3 operator/(const Vector3& v, const float k) {
 Vector3 operator*(const Vector3& v1, const Vector3& v2) {
     return {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
 }
+Vector3& operator+=(Vector3& v1, const Vector3& v2) {
+    v1.x += v2.x; v1.y += v2.y; v1.z += v2.z;
+    return v1;
+}
+Vector3& operator*=(Vector3& v, const float k) {
+    v.x *= k; v.y *= k; v.z *= k;
+    return v;
+}
 float dot(const Vector3& v1, const Vector3& v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
@@ -116,15 +124,17 @@ Vector3 Trace(const Ray3& ray) {
     return normal;
 }
 
-void Render(int x0, int y0, int x1, int y1, int width, int height,
+void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
             std::vector<Vector3>& out) {
     const float aspect_ratio = 1.0f * width / height;
     for (int y = y0; y < y1; ++y)
-        for (int x = x0; x < x1; ++x) {
+        for (int x = x0, index = x0 + y * width; x < x1; ++x, ++index) {
             const float u = 1.0f * x / width - 0.5f;
             const float v = (1.0f * y / height - 0.5f) / aspect_ratio;
             Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
-            out[x + y * width] = (Trace(ray) + Vector3{1, 1, 1}) / 2;
+            for (int sample = 0; sample < spp; ++sample)
+                out[index] += (Trace(ray) + Vector3{1, 1, 1}) / 2;
+            out[index] *= 1.0f / spp;
         }
 }
 
@@ -150,11 +160,12 @@ int main(int argc, char* argv[]) {
     }
     scene_raw_in.close();
 
+    int width = 640, height = 480, spp = 1;
+    scene >> width >> height >> spp;
     scene >> spheres;
 
-    int width = 640, height = 480;
     std::vector<Vector3> pixels(width * height);
-    Render(0, 0, width, height, width, height, pixels);
+    Render(0, 0, width, height, width, height, spp, pixels);
 
     std::ofstream out("result.ppm");
     if (!out)

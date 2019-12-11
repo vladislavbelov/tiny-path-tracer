@@ -1,4 +1,7 @@
 # Default scene for tiny-path-tracer.
+# Scene settings: width, height, samples per pixel.
+640 480 1
+
 # Number of spheres.
 3
 # Position (x, y, z), radius.
