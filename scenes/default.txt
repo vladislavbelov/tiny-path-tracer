@@ -2,10 +2,15 @@
 # Scene settings: width, height, samples per pixel.
 640 480 1
 
+# Number of materials.
+1
+# Color (r, g, b), emission color.
+1.0 0.67 0.0  0 0 0
+
 # Number of spheres.
 3
-# Position (x, y, z), radius.
-0 0 10  3
--2 1 8  2
--2 -1 12  2
+# Position (x, y, z), radius, material id.
+0 0 10  3  0
+-2 1 8  2  0
+-2 -1 12  2  0
 

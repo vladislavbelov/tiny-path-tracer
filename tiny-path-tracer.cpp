@@ -20,9 +20,15 @@ struct Ray3 {
     Vector3 o, d; // Origin and direction respectively.
 };
 
+struct Material {
+    Vector3 c; // Color.
+    Vector3 e; // Emission.
+};
+
 struct Sphere {
     Vector3 p; // Position.
     float r; // Radius.
+    size_t m; // Material id.
 };
 
 Vector3 operator+(const Vector3& v1, const Vector3& v2) {
@@ -68,8 +74,11 @@ std::istream& operator>>(std::istream& in, Vector3& v) {
 std::ostream& operator<<(std::ostream& out, const Vector3& v) {
     return out << "(" << v.x << "," << v.y << "," << v.z << ")";
 }
+std::istream& operator>>(std::istream& in, Material& material) {
+    return in >> material.c >> material.e;
+}
 std::istream& operator>>(std::istream& in, Sphere& sphere) {
-    return in >> sphere.p >> sphere.r;
+    return in >> sphere.p >> sphere.r >> sphere.m;
 }
 template<typename T>
 std::istream& operator>>(std::istream& in, std::vector<T>& vector) {
@@ -100,9 +109,10 @@ bool Intersect(const Ray3& ray, const Sphere& sphere, Vector3& x, Vector3& norma
     return true;
 }
 
+std::vector<Material> materials;
 std::vector<Sphere> spheres;
 
-bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal) {
+bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal, size_t& material_id) {
     Vector3 tempX, tempNormal;
     bool found = false;
     for (const Sphere& sphere : spheres) {
@@ -112,6 +122,7 @@ bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal) {
             continue;
         x = tempX;
         normal = tempNormal;
+        material_id = sphere.m;
         found = true;
     }
     return found;
@@ -119,9 +130,10 @@ bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal) {
 
 Vector3 Trace(const Ray3& ray) {
     Vector3 x = ray.o + ray.d * 1e7f, normal;
-    if (!FindIntersection(ray, x, normal))
+    size_t material_id;
+    if (!FindIntersection(ray, x, normal, material_id))
         return Vector3{0, 0, 0};
-    return normal;
+    return ((normal + Vector3{1, 1, 1}) / 2) * 0.5f + materials[material_id].c * 0.5f;
 }
 
 void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
@@ -133,7 +145,7 @@ void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
             const float v = (1.0f * y / height - 0.5f) / aspect_ratio;
             Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
             for (int sample = 0; sample < spp; ++sample)
-                out[index] += (Trace(ray) + Vector3{1, 1, 1}) / 2;
+                out[index] += Trace(ray);
             out[index] *= 1.0f / spp;
         }
 }
@@ -162,7 +174,9 @@ int main(int argc, char* argv[]) {
 
     int width = 640, height = 480, spp = 1;
     scene >> width >> height >> spp;
-    scene >> spheres;
+    if (width < 1 || height < 1 || spp < 1)
+        return EXIT_FAILURE;
+    scene >> materials >> spheres;
 
     std::vector<Vector3> pixels(width * height);
     Render(0, 0, width, height, width, height, spp, pixels);
