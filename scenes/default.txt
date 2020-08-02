@@ -3,14 +3,18 @@
 640 480 1
 
 # Number of materials.
-1
+3
 # Color (r, g, b), emission color.
 1.0 0.67 0.0  0 0 0
+0.9 0.9 0.9  0 0 0
+1.0 1.0 1.0  20.0 20.0 20.0
 
 # Number of spheres.
-3
+5
 # Position (x, y, z), radius, material id.
-0 0 10  3  0
--2 1 8  2  0
--2 -1 12  2  0
+0 0 5  1  2
+-2 -1 7  2  0
+0 -10002 0  10000  1
+10002 0 0  10000  1
+-10002 0 0  10000  1
 

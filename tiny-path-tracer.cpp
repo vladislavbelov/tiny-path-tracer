@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iterator>
 #include <limits>
+#include <random>
 #include <sstream>
 #include <vector>
 
@@ -67,6 +68,9 @@ Vector3 normalize(const Vector3& v) {
     const float len = length(v);
     return len > 0.0f ? v / len : v;
 }
+Vector3 reflect(const Vector3& v, const Vector3& n) {
+    return v - n * (dot(n, v) * 2);
+}
 
 std::istream& operator>>(std::istream& in, Vector3& v) {
     return in >> v.x >> v.y >> v.z;
@@ -128,12 +132,32 @@ bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal, size_t& mate
     return found;
 }
 
-Vector3 Trace(const Ray3& ray) {
+const float PI = acosf(-1.0f);
+
+const Vector3 GetRandomDirectionOnSphere() {
+    static std::mt19937 gen;
+    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    const float theta = 2.0f * PI * dist(gen);
+    const float phi = acosf(1.0f - 2.0f * dist(gen));
+    const float sin_phi = sinf(phi);
+    return Vector3{sin_phi * cosf(theta), cosf(phi), sin_phi * sinf(theta)};
+}
+
+Vector3 Trace(const Ray3& ray, int depth = 0) {
     Vector3 x = ray.o + ray.d * 1e7f, normal;
     size_t material_id;
-    if (!FindIntersection(ray, x, normal, material_id))
+    if (depth > 4 || !FindIntersection(ray, x, normal, material_id))
         return Vector3{0, 0, 0};
-    return ((normal + Vector3{1, 1, 1}) / 2) * 0.5f + materials[material_id].c * 0.5f;
+    Vector3 dir = GetRandomDirectionOnSphere();
+    float cos_theta = dot(dir, normal);
+    if (cos_theta < 0.0f) {
+        cos_theta -= cos_theta;
+        dir = reflect(dir, normal);
+    }
+    const Vector3 incoming_light = Trace(Ray3{x + dir * 1e-4f, dir}, depth + 1);
+    const float pdf = 2.0f * PI;
+    return materials[material_id].e +
+               materials[material_id].c * incoming_light * cos_theta / pdf;
 }
 
 void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
@@ -142,18 +166,18 @@ void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
     for (int y = y0; y < y1; ++y)
         for (int x = x0, index = x0 + y * width; x < x1; ++x, ++index) {
             const float u = 1.0f * x / width - 0.5f;
-            const float v = (1.0f * y / height - 0.5f) / aspect_ratio;
-            Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
+            const float v = (0.5f - 1.0f * y / height) / aspect_ratio;
+            const Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
             for (int sample = 0; sample < spp; ++sample)
                 out[index] += Trace(ray);
             out[index] *= 1.0f / spp;
         }
 }
 
-void OutputColor(std::ostream& out, const Vector3& v) {
-    out << clamp<int>(v.x * 255, 0, 255) << " "
-        << clamp<int>(v.y * 255, 0, 255) << " "
-        << clamp<int>(v.z * 255, 0, 255) << "\n";
+void OutputColor(std::ostream& out, const Vector3& color) {
+    out << clamp<int>(color.x * 255, 0, 255) << " "
+        << clamp<int>(color.y * 255, 0, 255) << " "
+        << clamp<int>(color.z * 255, 0, 255) << "\n";
 }
 
 int main(int argc, char* argv[]) {
