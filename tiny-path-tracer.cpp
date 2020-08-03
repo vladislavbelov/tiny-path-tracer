@@ -96,7 +96,7 @@ std::istream& operator>>(std::istream& in, std::vector<T>& vector) {
     return in;
 }
 
-bool Intersect(const Ray3& ray, const Sphere& sphere, Vector3& x, Vector3& normal) {
+bool Intersect(const Ray3& ray, const Sphere& sphere, Vector3& x) {
     const Vector3 k = ray.o - sphere.p;
     const float b = dot(k, ray.d);
     const float c = dot(k, k) - sphere.r * sphere.r;
@@ -109,7 +109,6 @@ bool Intersect(const Ray3& ray, const Sphere& sphere, Vector3& x, Vector3& norma
     const float t0 = -b - ds;
     const float t1 = -b + ds;
     x = ray.o + ray.d * (t0 < 0.0f ? t1 : t0);
-    normal = normalize(x - sphere.p);
     return true;
 }
 
@@ -117,15 +116,15 @@ std::vector<Material> materials;
 std::vector<Sphere> spheres;
 
 bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal, size_t& material_id) {
-    Vector3 tempX, tempNormal;
+    Vector3 tempX;
     bool found = false;
     for (const Sphere& sphere : spheres) {
-        if (!Intersect(ray, sphere, tempX, tempNormal))
+        if (!Intersect(ray, sphere, tempX))
             continue;
         if (dot(ray.d, tempX) >= dot(ray.d, x))
             continue;
         x = tempX;
-        normal = tempNormal;
+        normal = normalize(x - sphere.p);
         material_id = sphere.m;
         found = true;
     }
