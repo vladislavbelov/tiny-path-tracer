@@ -9,7 +9,7 @@
 #include <vector>
 
 template<typename T>
-T clamp(const T& val, const T& min, const T& max) {
+inline T clamp(const T val, const T min, const T max) {
     return std::min(max, std::max(min, val));
 }
 
@@ -32,43 +32,43 @@ struct Sphere {
     size_t m; // Material id.
 };
 
-Vector3 operator+(const Vector3& v1, const Vector3& v2) {
+inline Vector3 operator+(const Vector3& v1, const Vector3& v2) {
     return {v1.x + v2.x, v1.y + v2.y, v1.z + v2.z};
 }
-Vector3 operator-(const Vector3& v1, const Vector3& v2) {
+inline Vector3 operator-(const Vector3& v1, const Vector3& v2) {
     return {v1.x - v2.x, v1.y - v2.y, v1.z - v2.z};
 }
-Vector3 operator-(const Vector3& v) {
+inline Vector3 operator-(const Vector3& v) {
     return {-v.x, -v.y, -v.z};
 }
-Vector3 operator*(const Vector3& v, const float k) {
+inline Vector3 operator*(const Vector3& v, const float k) {
     return {v.x * k, v.y * k, v.z * k};
 }
-Vector3 operator/(const Vector3& v, const float k) {
+inline Vector3 operator/(const Vector3& v, const float k) {
     return {v.x / k, v.y / k, v.z / k};
 }
-Vector3 operator*(const Vector3& v1, const Vector3& v2) {
+inline Vector3 operator*(const Vector3& v1, const Vector3& v2) {
     return {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
 }
-Vector3& operator+=(Vector3& v1, const Vector3& v2) {
+inline Vector3& operator+=(Vector3& v1, const Vector3& v2) {
     v1.x += v2.x; v1.y += v2.y; v1.z += v2.z;
     return v1;
 }
-Vector3& operator*=(Vector3& v, const float k) {
+inline Vector3& operator*=(Vector3& v, const float k) {
     v.x *= k; v.y *= k; v.z *= k;
     return v;
 }
 float dot(const Vector3& v1, const Vector3& v2) {
     return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
-float length(const Vector3& v) {
+inline float length(const Vector3& v) {
     return std::sqrt(dot(v, v));
 }
-Vector3 normalize(const Vector3& v) {
+inline Vector3 normalize(const Vector3& v) {
     const float len = length(v);
     return len > 0.0f ? v / len : v;
 }
-Vector3 reflect(const Vector3& v, const Vector3& n) {
+inline Vector3 reflect(const Vector3& v, const Vector3& n) {
     return v - n * (dot(n, v) * 2);
 }
 
