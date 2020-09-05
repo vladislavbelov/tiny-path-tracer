@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
@@ -6,6 +7,8 @@
 #include <limits>
 #include <random>
 #include <sstream>
+#include <thread>
+#include <utility>
 #include <vector>
 
 template<typename T>
@@ -138,8 +141,9 @@ bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal, size_t& mate
 const float PI = acosf(-1.0f);
 
 const Vector3 GetRandomDirectionOnSphere() {
-    static std::mt19937 gen;
-    static std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    thread_local std::mt19937 gen(static_cast<unsigned>(
+        std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+    thread_local std::uniform_real_distribution<float> dist(0.0f, 1.0f);
     const float theta = 2.0f * PI * dist(gen);
     const float phi = acosf(1.0f - 2.0f * dist(gen));
     const float sin_phi = sinf(phi);
@@ -165,11 +169,12 @@ Vector3 Trace(const Ray3& ray, int depth = 0) {
 
 inline Vector3 ApplyToneMappingAndGammaCorrection(Vector3 color) {
     color = color / (Vector3{1.0f, 1.0f, 1.0f} + color);
-    const float e = 1.0f / 2.2;
+    const float e = 1.0f / 2.2f;
     return Vector3{powf(color.x, e), powf(color.y, e), powf(color.z, e)};
 }
 
-void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
+void Render(const int x0, const int y0, const int x1, const int y1,
+            const int width, const int height, const int spp,
             std::vector<Vector3>& out) {
     const float aspect_ratio = 1.0f * width / height;
     for (int y = y0; y < y1; ++y)
@@ -179,14 +184,14 @@ void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
             const Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
             for (int sample = 0; sample < spp; ++sample)
                 out[index] += Trace(ray);
-            out[index] = ApplyToneMappingAndGammaCorrection(out[index] / spp);
+            out[index] = ApplyToneMappingAndGammaCorrection(out[index] * (1.0f / spp));
         }
 }
 
 void OutputColor(std::ostream& out, const Vector3& color) {
-    out << clamp<int>(color.x * 255, 0, 255) << " "
-        << clamp<int>(color.y * 255, 0, 255) << " "
-        << clamp<int>(color.z * 255, 0, 255) << "\n";
+    out << clamp<int>(static_cast<int>(color.x * 255), 0, 255) << " "
+        << clamp<int>(static_cast<int>(color.y * 255), 0, 255) << " "
+        << clamp<int>(static_cast<int>(color.z * 255), 0, 255) << "\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -205,14 +210,27 @@ int main(int argc, char* argv[]) {
     }
     scene_raw_in.close();
 
-    int width = 640, height = 480, spp = 1;
-    scene >> width >> height >> spp;
-    if (width < 1 || height < 1 || spp < 1)
+    int width = 640, height = 480, spp = 1, number_of_threads = 1;
+    scene >> width >> height >> spp >> number_of_threads;
+    if (width < 1 || height < 1 || spp < 1 || number_of_threads < 1)
         return EXIT_FAILURE;
     scene >> materials >> spheres;
 
     std::vector<Vector3> pixels(width * height);
-    Render(0, 0, width, height, width, height, spp, pixels);
+    number_of_threads = std::min(number_of_threads, height);
+    if (number_of_threads > 1) {
+        std::vector<std::thread> threads;
+        const int y_offset = (height + number_of_threads - 1) / number_of_threads;
+        for (int idx = 0, y = 0; idx < number_of_threads; ++idx, y += y_offset)
+            threads.emplace_back(Render,
+                0, y, width, std::min(y + y_offset, height), width, height,
+                spp, std::ref(pixels));
+        for (std::thread& thread : threads)
+            if (thread.joinable())
+                thread.join();
+    } else {
+        Render(0, 0, width, height, width, height, spp, pixels);
+    }
 
     std::ofstream out("result.ppm");
     if (!out)
