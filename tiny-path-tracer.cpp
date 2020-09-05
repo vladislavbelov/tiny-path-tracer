@@ -50,6 +50,9 @@ inline Vector3 operator/(const Vector3& v, const float k) {
 inline Vector3 operator*(const Vector3& v1, const Vector3& v2) {
     return {v1.x * v2.x, v1.y * v2.y, v1.z * v2.z};
 }
+inline Vector3 operator/(const Vector3& v1, const Vector3& v2) {
+    return {v1.x / v2.x, v1.y / v2.y, v1.z / v2.z};
+}
 inline Vector3& operator+=(Vector3& v1, const Vector3& v2) {
     v1.x += v2.x; v1.y += v2.y; v1.z += v2.z;
     return v1;
@@ -160,6 +163,12 @@ Vector3 Trace(const Ray3& ray, int depth = 0) {
                materials[material_id].c * incoming_light * cos_theta / pdf;
 }
 
+inline Vector3 ApplyToneMappingAndGammaCorrection(Vector3 color) {
+    color = color / (Vector3{1.0f, 1.0f, 1.0f} + color);
+    const float e = 1.0f / 2.2;
+    return Vector3{powf(color.x, e), powf(color.y, e), powf(color.z, e)};
+}
+
 void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
             std::vector<Vector3>& out) {
     const float aspect_ratio = 1.0f * width / height;
@@ -170,7 +179,7 @@ void Render(int x0, int y0, int x1, int y1, int width, int height, int spp,
             const Ray3 ray{Vector3{0, 0, -1}, normalize(Vector3{u, v, 1})};
             for (int sample = 0; sample < spp; ++sample)
                 out[index] += Trace(ray);
-            out[index] *= 1.0f / spp;
+            out[index] = ApplyToneMappingAndGammaCorrection(out[index] / spp);
         }
 }
 
