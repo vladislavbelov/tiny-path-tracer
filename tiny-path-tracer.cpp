@@ -116,6 +116,7 @@ std::vector<Material> materials;
 std::vector<Sphere> spheres;
 
 bool FindIntersection(const Ray3& ray, Vector3& x, Vector3& normal, size_t& material_id) {
+    x = ray.o + ray.d * 1e7f;
     Vector3 tempX;
     bool found = false;
     for (const Sphere& sphere : spheres) {
@@ -143,14 +144,14 @@ const Vector3 GetRandomDirectionOnSphere() {
 }
 
 Vector3 Trace(const Ray3& ray, int depth = 0) {
-    Vector3 x = ray.o + ray.d * 1e7f, normal;
+    Vector3 x, normal;
     size_t material_id;
     if (depth > 4 || !FindIntersection(ray, x, normal, material_id))
         return Vector3{0, 0, 0};
     Vector3 dir = GetRandomDirectionOnSphere();
     float cos_theta = dot(dir, normal);
     if (cos_theta < 0.0f) {
-        cos_theta -= cos_theta;
+        cos_theta = -cos_theta;
         dir = reflect(dir, normal);
     }
     const Vector3 incoming_light = Trace(Ray3{x + dir * 1e-4f, dir}, depth + 1);
