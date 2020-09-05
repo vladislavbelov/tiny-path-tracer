@@ -1,20 +1,24 @@
 # Default scene for tiny-path-tracer.
 # Scene settings: width, height, samples per pixel.
-640 480 1
+640 480 8
 
 # Number of materials.
-3
+5
 # Color (r, g, b), emission color.
 1.0 0.67 0.0  0 0 0
 0.9 0.9 0.9  0 0 0
-1.0 1.0 1.0  20.0 20.0 20.0
+1.0 1.0 1.0  30.0 30.0 30.0
+1.0 0.8 0.4  0 0 0
+0.6 0.6 1.0  0 0 0
 
 # Number of spheres.
-5
+7
 # Position (x, y, z), radius, material id.
-0 0 5  1  2
--2 -1 7  2  0
+0 1 5  0.5  2
+-1 -1 6  1  0
 0 -10002 0  10000  1
-10002 0 0  10000  1
--10002 0 0  10000  1
+0 10002 0  10000  1
+10002 0 0  10000  4
+-10002 0 0  10000  3
+0 0 10008  10000  1
 
